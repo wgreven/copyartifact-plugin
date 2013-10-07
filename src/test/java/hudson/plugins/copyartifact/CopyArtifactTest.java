@@ -1018,6 +1018,23 @@ public class CopyArtifactTest extends HudsonTestCase {
         assertFile(true, "foo.txt", b);
     }
 
+    @Bug(19833)
+    public void testRelativeFromFolderWithFallbackToAbsolute() throws Exception {
+        MockFolder folder = jenkins.createProject(MockFolder.class, "folder");
+
+        FreeStyleProject other = folder.createProject(FreeStyleProject.class, "foo");
+        other.getBuildersList().add(new ArtifactBuilder());
+        other.getPublishersList().add(new ArtifactArchiver("**", "", false, false));
+
+        FreeStyleProject p = folder.createProject(FreeStyleProject.class, "bar");
+        p.getBuildersList().add(new CopyArtifact("folder/foo", null, new StatusBuildSelector(true), "", "", false, false));
+
+        assertBuildStatusSuccess(other.scheduleBuild2(0, new UserCause()).get());
+        FreeStyleBuild b = p.scheduleBuild2(0, new UserCause()).get();
+        assertBuildStatusSuccess(b);
+        assertFile(true, "foo.txt", b);
+    }
+
     public void testRelativeFromFolder() throws Exception {
         FreeStyleProject other = jenkins.createProject(FreeStyleProject.class, "foo");
         other.getBuildersList().add(new ArtifactBuilder());
